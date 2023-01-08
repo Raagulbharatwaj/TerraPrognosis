@@ -12,19 +12,19 @@ Outputs data in multiple formats (e.g. graphs, tables, maps)
 ## Installation
 
 To install TerraPrognosis, simply run the following command:
-'''
+```
 !pip install terraprognosis
-'''
+```
 ## Getting Started
 
 To use TerraPrognosis, import the package and use the predict_climate function. 
 For example:
 
-'''python
+```python
 import terraprognosis
 
 terraprognosis.predict_climate(data, forecast_length, output_format)
-'''
+```
 
 ## Documentation
 
