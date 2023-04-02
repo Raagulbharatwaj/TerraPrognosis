@@ -1,25 +1,37 @@
-from EnergyBalanceModels.ZeroDimensionalEBMs import  LayeredZeroDimEBM
-layer_thickness = 5.0 # Thickness of each layer in meters
-num_layers = 4 # Number of atmospheric layers
+import numpy as np
+from EnergyBalanceModels.ZeroDimensionalEBMs import LayeredZeroDimEBM
 
-# Emissivity and albedo of each layer
-emissivity_layer = [0.6, 0.7, 0.8, 0.9]
-albedo_layer = [0.3, 0.2, 0.1, 0.05]
+#troposphere
+troposphere_albedos = np.random.uniform(0.06, 0.12, 100)
+troposphere_emissivities = np.random.uniform(0.85, 0.95, 100)
 
-ebm = LayeredZeroDimEBM(curr_temp=288.0, num_layers=num_layers, layer_thickness=layer_thickness,
-                                    emissivity_layer=emissivity_layer, albedo_layer=albedo_layer)
+# Stratosphere
+stratosphere_albedos = np.random.uniform(0.25, 0.35, 100)
+stratosphere_emissivities = np.random.uniform(0.85, 0.95, 100)
 
-years = 10
-albedo_initial = 0.3
-emissivity_initial = 0.7
-emissivity_rate = 0.001
+# Mesosphere
+mesosphere_albedos = np.random.uniform(0.4, 0.5, 100)
+mesosphere_emissivities = np.random.uniform(0.85, 0.95, 100)
 
-temperature, delta_t, emissivity = ebm.run_model(years, albedo_initial, emissivity_initial, emissivity_rate)
+# Thermosphere
+thermosphere_albedos = np.random.uniform(0.6, 0.7, 100)
+thermosphere_emissivities = np.random.uniform(0.85, 0.95,100)
 
-ebm.plot_results(temperature, delta_t, emissivity)
+albedos = np.stack((troposphere_albedos, stratosphere_albedos, mesosphere_albedos, thermosphere_albedos), axis=0)
+emissivities = np.stack((troposphere_emissivities, stratosphere_emissivities, mesosphere_emissivities, thermosphere_emissivities), axis=0)
 
+# Initialize model
+curr_temp = 288.0  # K
+num_layers = 4
+layer_thickness = 1.0  # m
 
+# Create the model object
+model = LayeredZeroDimEBM(curr_temp, num_layers, layer_thickness)
 
+temperature, delta_t = model.run_model(albedos, emissivities)
+
+# Plot the results
+model.plot_results(temperature, delta_t)
 
 
 

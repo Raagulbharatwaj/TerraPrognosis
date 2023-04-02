@@ -128,7 +128,7 @@ class NonLayeredZeroDimEBM:
 
 
 class LayeredZeroDimEBM:
-    def __init__(self, curr_temp, num_layers, layer_thickness, emissivity_layer, albedo_layer):
+    def __init__(self, curr_temp, num_layers, layer_thickness):
         self.stefan_boltzmann = 5.67e-8
         self.transmissivity = 0.6114139923607016
         self.Q = 341.3 
@@ -137,8 +137,6 @@ class LayeredZeroDimEBM:
         self.curr_temp = np.float64(curr_temp) # Current temperature of the Earth (K)
         self.num_layers = num_layers # Number of atmospheric layers
         self.layer_thickness = np.float64(layer_thickness) # Thickness of each layer (m)
-        self.emissivity_layer = np.array(emissivity_layer) # Emissivity of each atmospheric layer
-        self.albedo_layer = np.array(albedo_layer) # Albedo of each atmospheric layer
         print(f"{'Zero Dimensional Layered EBM':^50}")
         print(f"{'-'*50}")
         print(f"This model simulates changes in temperature over time based on changes in Earth's albedo and emissivity, as well as other parameters. The energy balance equation used is:")
@@ -168,7 +166,7 @@ class LayeredZeroDimEBM:
 
     def compute_delta_t(self, delta_q):
         """Compute the change in temperature (delta_T) for the current time step."""
-        dt = 60*60*24
+        dt = 60*60*24*365
         delta_t = delta_q * dt / self.C
         return delta_t
 
@@ -176,42 +174,39 @@ class LayeredZeroDimEBM:
         """Update the temperature for the current time step."""
         self.curr_temp += delta_t
         return self.curr_temp
-
-    def run_model(self, years, albedo_initial, emissivity_initial, emissivity_rate):
+    
+    def run_model(self, albedos, emissivities):
         """Run the zero-dimensional layered energy balance model for the specified number of years."""
-        time_steps_per_year = 12 # simulate changes each month
-        num_time_steps = years * time_steps_per_year
-        albedo = np.full(self.num_layers, albedo_initial)
-        emissivity = np.full((self.num_layers, num_time_steps+1), emissivity_initial)
-        emissivity[:,0] = self.emissivity_layer
-        delta_t = np.zeros((self.num_layers, num_time_steps+1))
-        temperature = np.zeros((self.num_layers, num_time_steps+1))
+        years = emissivities.shape[1]
+        # simulate changes each month
+        delta_t = np.zeros((self.num_layers, years+1))
+        temperature = np.zeros((self.num_layers, years+1))
         temperature[:,0] = self.curr_temp
-        
-        for t in range(num_time_steps):
-            # Compute the emissivity of each atmospheric layer at the current time
-            emissivity[:,t+1] = emissivity[:,t] + emissivity_rate
-            
+
+        for t in range(years):
+            # Compute the emissivity and albedo of each atmospheric layer at the current time
+            emissivity = emissivities[:,t]
+            albedo = albedos[:,t]
+
             # Compute the change in heat energy (delta_Q) for each atmospheric layer at the current time step
             delta_q = np.zeros(self.num_layers)
             for l in range(self.num_layers):
-                delta_q[l] = self.compute_delta_q(albedo[l], emissivity[l,t+1])
-            
+                delta_q[l] = self.compute_delta_q(albedo[l], emissivity[l])
+
             # Compute the change in temperature (delta_T) for each atmospheric layer at the current time step
             for l in range(self.num_layers):
                 delta_t[l,t+1] = self.compute_delta_t(delta_q[l])
-            
+
             # Update the temperature for each atmospheric layer at the current time step
             for l in range(self.num_layers):
                 temperature[l,t+1] = self.update_temperature(delta_t[l,t+1])
-        
-        return temperature, delta_t, emissivity
+        return temperature, delta_t
+
     
-    def plot_results(self, temperature, delta_t, emissivity):
+    def plot_results(self, temperature, delta_t):
         """Plot the results of the model."""
-        time_steps_per_year = 12
-        years = temperature.shape[1] // time_steps_per_year 
-        time = np.arange(0, years+1)
+        years = temperature.shape[1]  
+        time = np.arange(0, years)
         fig, ax = plt.subplots(2, 1, figsize=(10, 10))
         ax[0].plot(time, temperature[0,:years+1], label="Troposphere")
         ax[0].plot(time, temperature[1,:years+1], label="Stratosphere")
